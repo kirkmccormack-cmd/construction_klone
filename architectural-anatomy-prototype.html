@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Architectural Anatomy — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF; --card:#FFFFFF; --card-2:#F7F5EF;
+    --line:#EBE7DC; --line-2:#DBD5C7;
+    --plate:#F4EFE2; --plate-2:#EFE8D8;
+    --ink:#3A342A; --ink-soft:#6E634E; --muted:#9A8F79;
+    --violet:#7E6EAE; --violet-soft:#EEEAF6;
+    --sage:#8A986A; --sage-soft:#EAEDDD;
+    --teal:#5F8B86; --rose:#B0674F; --ochre:#C29B57;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"EB Garamond",Georgia,serif;color:var(--ink);background:var(--bg);overflow:hidden}
+  .lbl{font-family:"Nunito Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+  .app{display:grid;grid-template-columns:242px 1fr 320px;grid-template-rows:auto 1fr;height:100vh;gap:14px;padding:14px}
+
+  header{grid-column:1 / -1;display:flex;align-items:center;gap:16px;padding:2px 6px}
+  .mark{width:46px;height:46px;border-radius:12px;background:var(--card-2);border:1px solid var(--line-2);display:grid;place-items:center}
+  .brand h1{font-family:"Cormorant Garamond";font-weight:700;font-size:31px;line-height:.95;letter-spacing:-.01em}
+  .brand .tag{font-family:"Cormorant Garamond";font-style:italic;font-size:15px;color:var(--violet);margin-top:3px}
+  .navspace{flex:1}
+  nav{display:flex;gap:22px;align-items:center}
+  nav a{font-family:"Nunito Sans";font-size:11px;font-weight:600;color:var(--ink-soft);text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.85;cursor:pointer}
+  nav a:hover{opacity:1;color:var(--violet)}
+  nav a svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.4}
+  .avatar{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#caa9dd,#8a79c0);border:1px solid var(--line-2)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(60,54,42,.04)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px}
+
+  .left{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .view-item{display:flex;gap:12px;align-items:center;padding:10px 14px;margin:2px 8px;border-radius:11px;cursor:pointer;border:1px solid transparent}
+  .view-item:hover{background:var(--card-2)}
+  .view-item[aria-selected="true"]{background:var(--sage-soft);border-color:#cdd5b2}
+  .view-item .thumb{width:36px;height:36px;border-radius:9px;flex:0 0 auto;border:1px solid var(--line-2);display:grid;place-items:center;background:var(--card-2)}
+  .view-item .thumb svg{width:24px;height:24px}
+  .view-item .nm{font-family:"Cormorant Garamond";font-weight:600;font-size:18px;line-height:1.05}
+  .view-item .sub{font-family:"Nunito Sans";font-size:10px;color:var(--muted);margin-top:2px}
+  .view-item .star{margin-left:auto;color:var(--sage);opacity:0;font-size:14px}
+  .view-item[aria-selected="true"] .star{opacity:1}
+
+  .components{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  .comp-list{overflow-y:auto;padding:4px 6px 12px}
+  .comp-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;cursor:pointer;font-size:16px}
+  .comp-row:hover{background:var(--card-2)}
+  .comp-row[aria-selected="true"]{background:var(--violet-soft)}
+  .comp-row .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(0,0,0,.03)}
+  .comp-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .comp-empty{padding:10px 16px;font-size:14px;color:var(--muted);line-height:1.4}
+
+  .center{display:grid;grid-template-rows:1fr 168px;gap:14px;min-height:0}
+  .stage-card{position:relative;min-height:0;overflow:hidden;padding:0;background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 0 0.24 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 120% at 60% 8%, var(--plate), var(--plate-2));border-color:var(--line-2)}
+  .plate-frame{position:absolute;inset:14px;border:1px solid rgba(74,59,42,.28);border-radius:2px;pointer-events:none;z-index:1}
+  .plate-frame::before{content:"";position:absolute;inset:5px;border:1px solid rgba(74,59,42,.15)}
+  .plate-title{position:absolute;left:26px;bottom:22px;z-index:3;font-family:"Cormorant Garamond";font-style:italic;font-size:19px;color:#7a6a4c}
+  .plate-no{position:absolute;right:26px;bottom:22px;z-index:3;font-family:"Cormorant Garamond";font-style:italic;font-size:17px;color:#8a7a5c}
+  .stage-head{position:absolute;top:22px;left:28px;z-index:3}
+  .stage-head .ttl{font-family:"Cormorant Garamond";font-weight:700;font-size:34px;line-height:1}
+  .stage-head .sub{font-family:"Cormorant Garamond";font-style:italic;font-size:18px;color:var(--ink-soft);margin-top:2px}
+  #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #scene:active{cursor:grabbing}
+  .stage-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;z-index:2;pointer-events:none}
+  .stage-msg span{font-family:"Cormorant Garamond";font-style:italic;font-size:19px;color:#8a7a5c;max-width:60%;line-height:1.4;background:rgba(255,255,255,.6);padding:16px 22px;border-radius:12px}
+  #overlay{position:absolute;inset:0;z-index:2;pointer-events:none}
+  #leader{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .plabel{position:absolute;font-family:"Cormorant Garamond";font-size:19px;line-height:1.05;color:var(--ink);max-width:180px;cursor:pointer;pointer-events:auto;display:none;transform:translateY(-50%)}
+  .plabel .ltr{font-style:italic;color:var(--violet);margin-right:6px}
+
+  .viewmode{position:absolute;top:20px;right:22px;z-index:3;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);border:1px solid var(--line-2);border-radius:12px;padding:12px 13px 11px;width:190px}
+  .viewmode .lbl{margin-bottom:9px}
+  .seg{display:flex;background:var(--card);border:1px solid var(--line-2);border-radius:9px;overflow:hidden}
+  .seg button{flex:1;border:0;background:transparent;padding:8px 0;cursor:pointer;display:grid;place-items:center;border-left:1px solid var(--line-2);font-family:"Nunito Sans";font-size:11px;color:var(--ink-soft);gap:4px}
+  .seg button:first-child{border-left:0}
+  .seg button svg{width:17px;height:17px;stroke:var(--ink-soft);fill:none;stroke-width:1.4}
+  .seg button[aria-pressed="true"]{background:var(--sage-soft);color:var(--sage)}
+  .seg button[aria-pressed="true"] svg{stroke:var(--sage)}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-family:"Nunito Sans";font-size:12px;color:var(--ink-soft)}
+  .sw{width:40px;height:22px;border-radius:12px;background:var(--line-2);position:relative;cursor:pointer;border:0;transition:background .2s;flex:0 0 auto}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .sw[aria-pressed="true"]{background:var(--sage)}
+  .sw[aria-pressed="true"]::after{left:20px}
+
+  .toolbar,.stage-right{position:absolute;bottom:54px;z-index:3;display:flex;background:rgba(255,255,255,.85);backdrop-filter:blur(3px);border:1px solid var(--line-2);border-radius:11px;overflow:hidden}
+  .toolbar{left:26px}.stage-right{right:26px}
+  .toolbar button,.stage-right button{font-family:"Nunito Sans";font-size:12px;color:var(--ink-soft);background:transparent;border:0;border-left:1px solid var(--line-2);padding:10px 13px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .toolbar button:first-child,.stage-right button:first-child{border-left:0}
+  .toolbar button:hover,.stage-right button:hover{background:var(--card-2)}
+  .toolbar button svg,.stage-right button svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.5}
+  .toolbar button[aria-pressed="true"]{color:var(--sage);background:var(--sage-soft)}
+
+  .bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0}
+  .bottom>.card{height:100%;overflow:hidden;display:flex;flex-direction:column}
+  .cc{display:flex;gap:14px;padding:2px 16px 14px;flex:1;min-height:0}
+  .cc-factors{display:flex;flex-direction:column;gap:6px;flex:0 0 118px}
+  .cc-factors button{text-align:left;font-family:"Nunito Sans";font-size:12px;padding:8px 10px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);border-radius:8px;cursor:pointer}
+  .cc-factors button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .cc-bars{flex:1 1 auto;min-width:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+  .bar-row{display:grid;grid-template-columns:1fr 66px;align-items:center;gap:8px;cursor:pointer}
+  .bar-row .bl{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink-soft);min-width:0}
+  .bar-row .bl .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .bar-row .bl .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{grid-column:1 / -1;height:8px;background:var(--card-2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:-2px}
+  .fill{height:100%;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .bar-row .bv{text-align:right;font-family:"Nunito Sans";font-size:12px;color:var(--ink)}
+  .bar-row[data-sel="true"] .nm{color:var(--violet);font-weight:600}
+  .drawings{padding:2px 16px 16px;display:flex;gap:10px;flex:1}
+  .draw-tile{flex:1;border:1px solid var(--line-2);border-radius:10px;background:var(--card-2);display:grid;place-items:end center;padding:8px;position:relative;overflow:hidden}
+  .draw-tile span{font-family:"Nunito Sans";font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);z-index:2}
+  .draw-tile svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+
+  .right{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .detail .body{padding:4px 16px 14px}
+  .comp-head{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  .comp-head .swatch{width:42px;height:42px;border-radius:11px;border:1px solid var(--line-2);flex:0 0 auto}
+  .comp-head .nm{font-family:"Cormorant Garamond";font-weight:600;font-size:21px;line-height:1.05}
+  .comp-head .de{font-family:"Cormorant Garamond";font-style:italic;font-size:14px;color:var(--ink-soft)}
+  .attr{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line)}
+  .attr .k{font-family:"Nunito Sans";font-size:12px;color:var(--muted)}
+  .attr .v{font-size:17px}
+  .attr .v small{font-size:12px;color:var(--muted)}
+  .empty{padding:6px 16px 16px;font-size:15px;line-height:1.5;color:var(--ink-soft)}
+  .empty b{color:var(--ink)}
+  .market{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  .market h4{font-family:"Nunito Sans";font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);padding:14px 18px 0}
+  .market .body{padding:10px 18px 18px;overflow-y:auto;font-size:15px;line-height:1.5;color:var(--ink-soft)}
+  .market .body b{color:var(--ink);font-weight:600}
+
+  .warn{grid-column:1 / -1;font-family:"Nunito Sans";font-size:10.5px;color:#9a7a35;text-align:center;padding-top:2px}
+  input[type=file]{display:none}
+  button:focus-visible,[role=button]:focus-visible,.sw:focus-visible,.plabel:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+  /* LIBRARY */
+  #library{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;overflow-y:auto}
+  .lib-head{display:flex;align-items:center;gap:16px;padding:20px 30px 8px}
+  .lib-head h2{font-family:"Cormorant Garamond";font-weight:700;font-size:30px}
+  .lib-head .sub{font-family:"Cormorant Garamond";font-style:italic;font-size:16px;color:var(--violet)}
+  .lib-back{margin-left:auto;font-family:"Nunito Sans";font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--card-2);border:1px solid var(--line-2);border-radius:9px;padding:9px 14px;cursor:pointer}
+  .lib-back:hover{color:var(--violet)}
+  .lib-sec-lbl{font-family:"Nunito Sans";font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:16px 30px 8px}
+  .type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:0 30px}
+  .tile{background:var(--plate);border:1px solid var(--line-2);border-radius:12px;padding:14px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .tile:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(60,54,42,.1)}
+  .tile svg{width:60px;height:56px}
+  .tile svg g.gy *{stroke:#5c4a32}
+  .tile .t{font-family:"Cormorant Garamond";font-weight:600;font-size:15px;text-align:center;line-height:1.05}
+  .globe-wrap{display:flex;flex-direction:column;align-items:center;padding:16px 0 6px}
+  #globe{width:min(360px,72vw);height:min(360px,72vw);cursor:grab;touch-action:none}
+  #globe:active{cursor:grabbing}
+  .globe-cap{font-family:"Cormorant Garamond";font-style:italic;font-size:15px;color:var(--ink-soft);margin-top:-4px}
+  .band{display:flex;gap:12px;overflow-x:auto;padding:0 30px 30px}
+  .band .tile{flex:0 0 130px}
+
+  @media (max-width:1000px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto auto 58vh auto;overflow-y:auto;height:auto;min-height:100vh}
+    .stage-card{height:58vh}.center{grid-template-rows:58vh auto}nav{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="mark" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 30 30">
+        <path d="M4 17 L15 6 L26 17" fill="none" stroke="#8A986A" stroke-width="1.6"/>
+        <rect x="7" y="17" width="16" height="9" fill="#EEEAF6" stroke="#7E6EAE" stroke-width="1.2"/>
+        <rect x="10" y="20" width="4" height="6" fill="#B0674F"/><rect x="16" y="20" width="4" height="4" fill="#5F8B86"/>
+        <circle cx="15" cy="12" r="2.2" fill="#C29B57"/>
+      </svg>
+    </div>
+    <div class="brand"><h1>Architectural Anatomy</h1><div class="tag">The atlas of Construction Clones that provide insight before site</div></div>
+    <div class="navspace"></div>
+    <nav aria-label="Primary">
+      <a data-nav="library"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Gallery</a>
+      <a data-nav="library"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg>Library</a>
+      <a data-nav="main"><svg viewBox="0 0 24 24"><path d="M4 4h13a3 3 0 013 3v13H7a3 3 0 01-3-3z"/><path d="M8 8h8M8 12h8"/></svg>Notebooks</a>
+      <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Settings</a>
+    </nav>
+    <div class="avatar" aria-hidden="true"></div>
+  </header>
+
+  <div class="left">
+    <div class="card views"><div class="card-h"><span class="lbl">◈ Feature views</span></div><div id="viewList"></div></div>
+    <div class="card components"><div class="card-h"><span class="lbl">✦ Components</span></div><div class="comp-list" id="compList"></div></div>
+  </div>
+
+  <div class="center">
+    <div class="card stage-card">
+      <div class="plate-frame"></div>
+      <div class="stage-head"><div class="ttl" id="viewTitle">Structure</div><div class="sub" id="viewSub">Superstructure frame</div></div>
+      <div class="viewmode">
+        <div class="lbl">View mode</div>
+        <div class="seg" role="group" aria-label="View mode">
+          <button data-mode="solid" aria-pressed="true">Solid</button>
+          <button data-mode="isolate" aria-pressed="false">Isolate</button>
+        </div>
+        <div class="toggle-row"><span>Annotation</span><button class="sw" id="annSw" aria-pressed="true" aria-label="Annotation"></button></div>
+        <div class="toggle-row"><span>Cross-section</span><button class="sw" id="xsw" aria-pressed="false" aria-label="Cross-section"></button></div>
+      </div>
+      <canvas id="scene" aria-label="3D building model — drag to rotate, scroll to zoom, click a component"></canvas>
+      <div class="stage-msg" id="stageMsg"><span></span></div>
+      <div id="overlay"><svg id="leader"></svg><div class="plabel" id="plabel"></div></div>
+      <div class="toolbar">
+        <button id="rotateBtn" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 018-8 8 8 0 017 4"/><path d="M20 4v4h-4"/></svg>Rotate</button>
+        <button id="isoBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/></svg>Isolate</button>
+        <button id="resetBtn"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9"/><path d="M3 3v6h6"/></svg>Reset</button>
+      </div>
+      <div class="stage-right">
+        <button id="shotBtn"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.4"/><path d="M8 6l1.5-2h5L16 6"/></svg>Screenshot</button>
+        <button id="glbBtn"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12v9M4 7.5L12 12l8-4.5"/></svg>Select model folder</button>
+        <input type="file" id="glbInput" accept=".glb,.gltf" multiple webkitdirectory>
+      </div>
+      <div class="plate-title" id="plateTitle">Pl. II — Structure</div>
+      <div class="plate-no" id="plateNo">fig. 2</div>
+    </div>
+
+    <div class="bottom">
+      <div class="card"><div class="card-h"><span class="lbl">▤ Drawings</span></div>
+        <div class="drawings">
+          <div class="draw-tile"><svg viewBox="0 0 100 75"><rect x="14" y="12" width="72" height="50" fill="none" stroke="#B0A585" stroke-width="1.2"/><path d="M14 30h72M40 12v50" stroke="#B0A585" stroke-width="1"/></svg><span>Plan</span></div>
+          <div class="draw-tile"><svg viewBox="0 0 100 75"><path d="M20 60h60V26L50 12 20 26z" fill="none" stroke="#B0A585" stroke-width="1.2"/><path d="M20 26h60" stroke="#B0A585" stroke-width="1"/></svg><span>Section</span></div>
+          <div class="draw-tile"><svg viewBox="0 0 100 75"><rect x="26" y="16" width="48" height="44" fill="none" stroke="#B0A585" stroke-width="1.2"/><path d="M26 24h48M26 32h48M26 40h48M26 48h48" stroke="#B0A585" stroke-width=".8"/></svg><span>Detail</span></div>
+        </div>
+      </div>
+      <div class="card compare"><div class="card-h"><span class="lbl">⇋ Compare components</span></div>
+        <div class="cc">
+          <div class="cc-factors" role="group" aria-label="Factor">
+            <button data-metric="carbon" aria-pressed="true">Embodied carbon</button>
+            <button data-metric="cost" aria-pressed="false">Material cost</button>
+            <button data-metric="time" aria-pressed="false">Assembly time</button>
+          </div>
+          <div class="cc-bars" id="compareBars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card detail"><div class="card-h"><span class="lbl">◐ Component details</span><span style="color:#b07d6b">♥</span></div>
+      <div class="body" id="detailBody"><div class="empty">Click any part of the model — or a name in the <b>Components</b> list — to read its illustrative carbon, cost and assembly-time figures.</div></div>
+    </div>
+    <div class="card market"><h4>◆ The proposition</h4>
+      <div class="body">Imagine access to the most detailed models of buildings ever created — not fragments or isolated details, but complete whole buildings, fully resolved from foundations to roof. Every system, every junction, every interface modelled at the same extraordinary level of detail. You can magnify, explore, explode, specify, and scrutinise any part of any building down to the screw, nail, and wire. <b>Architectural Anatomy has done it.</b> These exemplar designs show exactly how components come together, how systems coordinate, and where the risks lie — giving you the certainty to make decisions faster, resolve clashes earlier, and avoid the costly errors that happen when details are misunderstood.</div>
+    </div>
+  </div>
+
+  <div class="warn">⚠ Illustrative placeholder data — not from EPD/ICE or supplier pricing. © Kirk McCormack · Architectural Anatomy · patent pending · confidential prototype</div>
+</div>
+
+<div id="library">
+  <div class="lib-head">
+    <div><h2>The Atlas of Construction Clones</h2><div class="sub">Insight before site — pick a type, a place, or a landmark</div></div>
+    <button class="lib-back" id="libBack">← Back to viewer</button>
+  </div>
+  <div class="lib-sec-lbl">Building types</div>
+  <div class="type-grid" id="typeGrid"></div>
+  <div class="lib-sec-lbl">Atlas of world locations</div>
+  <div class="globe-wrap"><canvas id="globe"></canvas><div class="globe-cap">Drag to turn the globe · click to enter</div></div>
+  <div class="lib-sec-lbl">Historical landmarks</div>
+  <div class="band" id="landmarkBand"></div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js"}}
+</script>
+<script type="module">
+import * as THREE from "three";
+let GLTFLoader=null;
+try{({GLTFLoader}=await import("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js"));}catch(e){}
+
+const VIEWS={
+  foundations:{title:"Foundations",sub:"Substructure",plate:"Pl. I — Foundations",fig:1,file:"Foundations_VDC_opt.glb"},
+  structure:{title:"Structure",sub:"Superstructure frame",plate:"Pl. II — Structure",fig:2,file:"Structure_VDC_opt.glb"},
+  stairs:{title:"Stairs",sub:"Vertical circulation",plate:"Pl. III — Stairs",fig:3,file:"Stairs_VDC_opt.glb"},
+  mockup:{title:"Mock-Up",sub:"Assembled sample",plate:"Pl. IV — Mock-Up",fig:4,file:"Mock_Up_VDC_opt.glb"},
+  services:{title:"Building Services",sub:"M&E · water · gas · heat · power · light",plate:"Pl. V — Services",fig:5,file:"MEP_VDC_opt.glb"}
+};
+const DOTS=[0x8A986A,0xC29B57,0xB0674F,0x5F8B86,0x8A6F94,0x7C8A93,0xA85A46,0xC9A24E,0x6E7D4F,0x9C7A94];
+const METRIC={carbon:{f:v=>Math.round(v).toLocaleString()+" kg"},cost:{f:v=>"€"+Math.round(v).toLocaleString()},time:{f:v=>Math.round(v)+" h"}};
+const hex=n=>"#"+n.toString(16).padStart(6,"0");
+
+/* deterministic illustrative stats from a component name */
+function stats(name){let h=2166136261;for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619);}h>>>=0;
+  return {carbon:40+h%1600, cost:120+((h>>3)%6000), time:2+((h>>7)%70)};}
+
+/* name cleaning / meaningful ancestor */
+const SKIP=/^(geom3d|active view|scene ?\d*|qto isolated|rootnode|object\d*|node\d*|assembly)/i;
+function clean(s){return s.replace(/_instance.*$/i,"").replace(/#\d+$/,"").replace(/[_\s]+\d+$/,"").replace(/\s+/g," ").trim();}
+function meaningful(node){let n=node;while(n){const nm=n.name;if(nm&&!SKIP.test(nm)){const c=clean(nm);if(c)return c;}n=n.parent;}return "Element";}
+
+/* ---- three ---- */
+const canvas=document.getElementById("scene");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.localClippingEnabled=true;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.05,4000);
+scene.add(new THREE.HemisphereLight(0xFDF7EA,0xC9BE9E,1.18));
+scene.add(new THREE.AmbientLight(0xffffff,0.34));
+const key=new THREE.DirectionalLight(0xFFF4E0,0.32);key.position.set(1,2,1.4);scene.add(key);
+const root=new THREE.Group();scene.add(root);
+const clipPlane=new THREE.Plane(new THREE.Vector3(1,0,0),0);
+
+/* botanical material with heavy fresnel outline */
+function makeMat(col,highlight){
+  const m=new THREE.MeshStandardMaterial({color:col,roughness:1,metalness:0,emissive:highlight?0x3a2c58:0x000000});
+  m.onBeforeCompile=(sh)=>{
+    sh.uniforms.uRim={value:1.35};sh.uniforms.uRimPow={value:1.7};sh.uniforms.uRimCol={value:new THREE.Color(0x2b2314)};
+    sh.fragmentShader="uniform float uRim;uniform float uRimPow;uniform vec3 uRimCol;\n"+sh.fragmentShader.replace(
+      "#include <dithering_fragment>",
+      "float _rf=pow(1.0-clamp(dot(normalize(vNormal),normalize(vViewPosition)),0.0,1.0),uRimPow);gl_FragColor.rgb=mix(gl_FragColor.rgb,uRimCol,_rf*uRim);\n#include <dithering_fragment>");
+  };
+  return m;
+}
+const baseMat=makeMat(0xB7B49A,false), hiMat=makeMat(0x9683c4,true);
+
+/* ---- state ---- */
+let currentView="structure",currentComp=null,compareMetric="carbon",mode="solid",annOn=true,crossOn=false;
+let CM={},currentModel=null,modelCenter=new THREE.Vector3(),modelSize=8;
+const cache={};
+const PERSIST_DB="architectural-anatomy-local-models";
+const PERSIST_STORE="glb-files";
+let localFiles=null;
+let localModelsByView={};
+const target=new THREE.Vector3(),DEF={theta:0.9,phi:1.05};let radius=14,theta=0.9,phi=1.05;
+function applyCam(){camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta),target.y+radius*Math.cos(phi),target.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(target);}
+let autoRotate=true,lastInt=0;const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;if(reduced)autoRotate=false;
+let dragging=false,px=0,py=0,moved=0;
+canvas.addEventListener("pointerdown",e=>{dragging=true;moved=0;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);lastInt=performance.now();});
+canvas.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);theta-=dx*0.006;phi=Math.max(0.15,Math.min(1.5,phi-dy*0.006));lastInt=performance.now();});
+canvas.addEventListener("pointerup",e=>{dragging=false;if(moved<5)pick(e);});
+canvas.addEventListener("wheel",e=>{e.preventDefault();radius=Math.max(modelSize*0.35,Math.min(modelSize*3.2,radius+e.deltaY*modelSize*0.0012));lastInt=performance.now();},{passive:false});
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+function pick(e){const r=canvas.getBoundingClientRect();ndc.x=((e.clientX-r.left)/r.width)*2-1;ndc.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(root.children,true);
+  for(const h of hits){let o=h.object;while(o&&!("cid"in o.userData))o=o.parent;if(o){selectComp(o.userData.cid);return;}}}
+
+function clearHi(){Object.values(CM).flat().forEach(m=>{m.material=baseMat;});}
+function applyMode(){const all=Object.values(CM).flat();all.forEach(m=>m.visible=true);if(mode==="isolate"&&currentComp)all.forEach(m=>m.visible=(m.userData.cid===currentComp));}
+function selectComp(id){currentComp=id;clearHi();(CM[id]||[]).forEach(m=>{m.material=hiMat;});applyMode();renderDetail();syncCompList();syncBars();}
+function setMode(m){mode=m;document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===m));applyMode();}
+function setCross(on){crossOn=on;xsw.setAttribute("aria-pressed",on);clipPlane.constant=-(modelCenter.x);const planes=on?[clipPlane]:[];baseMat.clippingPlanes=planes;hiMat.clippingPlanes=planes;baseMat.needsUpdate=hiMat.needsUpdate=true;}
+
+/* ---- UI: views ---- */
+const viewList=document.getElementById("viewList");
+const vIcon={
+  foundations:`<svg viewBox="0 0 30 30"><rect x="5" y="18" width="20" height="7" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.4"/><path d="M9 18v-5M15 18v-6M21 18v-5" stroke="#B0674F" stroke-width="1.3"/></svg>`,
+  structure:`<svg viewBox="0 0 30 30"><path d="M7 25V8M15 25V8M23 25V8M5 8h20M5 16h20" fill="none" stroke="#7C8A93" stroke-width="1.5"/></svg>`,
+  stairs:`<svg viewBox="0 0 30 30"><path d="M6 24h5v-5h5v-5h5v-5h3" fill="none" stroke="#8A986A" stroke-width="1.6"/></svg>`,
+  mockup:`<svg viewBox="0 0 30 30"><path d="M6 24 15 6l9 18z" fill="#EEEAF6" stroke="#7E6EAE" stroke-width="1.3"/><rect x="12" y="16" width="6" height="8" fill="#5F8B86"/></svg>`,
+  services:`<svg viewBox="0 0 30 30"><path d="M5 20h9v-9" fill="none" stroke="#5F8B86" stroke-width="1.6"/><path d="M8 24h16" stroke="#A85A46" stroke-width="1.6"/><circle cx="24" cy="9" r="2" fill="#C9A24E"/></svg>`
+};
+Object.entries(VIEWS).forEach(([id,v])=>{const el=document.createElement("div");el.className="view-item";el.setAttribute("role","button");el.tabIndex=0;el.setAttribute("aria-selected",id===currentView);
+  el.innerHTML=`<div class="thumb">${vIcon[id]}</div><div><div class="nm">${v.title}</div><div class="sub">${v.sub}</div></div><span class="star">★</span>`;
+  el.addEventListener("click",()=>loadView(id));el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();loadView(id);}});viewList.appendChild(el);});
+function syncViewList(){[...viewList.children].forEach((el,i)=>el.setAttribute("aria-selected",Object.keys(VIEWS)[i]===currentView));}
+
+const compList=document.getElementById("compList");
+function typeList(){return Object.keys(CM).sort((a,b)=>a.localeCompare(b));}
+function renderCompList(){const types=typeList();compList.innerHTML="";
+  if(!types.length){compList.innerHTML=`<div class="comp-empty">Component list appears once the model loads.</div>`;return;}
+  types.forEach((id,i)=>{const el=document.createElement("div");el.className="comp-row";el.setAttribute("role","button");el.tabIndex=0;el.setAttribute("aria-selected",id===currentComp);
+    el.innerHTML=`<span class="dot" style="background:${hex(DOTS[i%DOTS.length])}"></span><span class="nm">${id}</span>`;
+    el.addEventListener("click",()=>selectComp(id));el.addEventListener("keydown",e=>{if(e.key==="Enter"){selectComp(id);}});compList.appendChild(el);});}
+function syncCompList(){const ids=typeList();[...compList.children].forEach((el,i)=>{if(ids[i]!==undefined)el.setAttribute("aria-selected",ids[i]===currentComp);});}
+
+const detailBody=document.getElementById("detailBody");
+function renderDetail(){if(!currentComp){return;}const s=stats(currentComp);const i=typeList().indexOf(currentComp);
+  detailBody.innerHTML=`<div class="comp-head"><div class="swatch" style="background:${hex(DOTS[(i<0?0:i)%DOTS.length])}"></div><div><div class="nm">${currentComp}</div><div class="de">Component of the ${VIEWS[currentView].title} clone</div></div></div>
+    <div class="attr"><span class="k">Embodied carbon</span><span class="v">${s.carbon.toLocaleString()} <small>kgCO₂e</small></span></div>
+    <div class="attr"><span class="k">Material cost</span><span class="v">€${s.cost.toLocaleString()} <small>materials</small></span></div>
+    <div class="attr"><span class="k">Assembly time</span><span class="v">${s.time} <small>hrs</small></span></div>`;}
+
+const compareBars=document.getElementById("compareBars");
+function renderCompare(){const types=typeList();if(!types.length){compareBars.innerHTML="";return;}
+  const rows=types.map((id,i)=>({id,i,v:stats(id)[compareMetric]})).sort((a,b)=>b.v-a.v).slice(0,8);
+  const max=Math.max(...rows.map(r=>r.v),1);
+  compareBars.innerHTML=rows.map(r=>`<div class="bar-row" data-cid="${r.id}" data-sel="${r.id===currentComp}" role="button" tabindex="0">
+    <span class="bl"><span class="dot" style="background:${hex(DOTS[r.i%DOTS.length])}"></span><span class="nm">${r.id}</span></span>
+    <span class="bv">${METRIC[compareMetric].f(r.v)}</span>
+    <span class="track"><span class="fill" style="width:${(r.v/max*100).toFixed(0)}%;background:${hex(DOTS[r.i%DOTS.length])}"></span></span></div>`).join("");
+  compareBars.querySelectorAll(".bar-row").forEach(el=>{el.addEventListener("click",()=>selectComp(el.dataset.cid));el.addEventListener("keydown",e=>{if(e.key==="Enter")selectComp(el.dataset.cid);});});}
+function syncBars(){compareBars.querySelectorAll(".bar-row").forEach(el=>el.setAttribute("data-sel",el.dataset.cid===currentComp));}
+document.querySelectorAll(".cc-factors button").forEach(b=>b.addEventListener("click",()=>{compareMetric=b.dataset.metric;document.querySelectorAll(".cc-factors button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderCompare();}));
+
+/* ---- callout (mirrored bracket, dotted leader) ---- */
+const overlay=document.getElementById("overlay"),leaderSVG=document.getElementById("leader"),plabel=document.getElementById("plabel");
+const leaderLine=document.createElementNS("http://www.w3.org/2000/svg","polyline");
+leaderLine.setAttribute("fill","none");leaderLine.setAttribute("stroke","#8a7a5c");leaderLine.setAttribute("stroke-width","1");leaderLine.setAttribute("stroke-dasharray","1.5 4");leaderLine.setAttribute("stroke-linecap","round");leaderLine.setAttribute("stroke-opacity","0.85");
+const bracket=document.createElementNS("http://www.w3.org/2000/svg","polyline");
+bracket.setAttribute("fill","none");bracket.setAttribute("stroke","#7E6EAE");bracket.setAttribute("stroke-width","1.5");bracket.setAttribute("stroke-linecap","round");
+leaderSVG.appendChild(leaderLine);leaderSVG.appendChild(bracket);
+function centerOf(id){const b=new THREE.Box3();(CM[id]||[]).forEach(m=>{if(m.visible)b.expandByObject(m);});return b.isEmpty()?null:b.getCenter(new THREE.Vector3());}
+function toScreen(v){const p=v.clone().project(camera);const r=canvas.getBoundingClientRect();return{x:(p.x*0.5+0.5)*r.width,y:(-p.y*0.5+0.5)*r.height,front:p.z<1};}
+function hideCallout(){plabel.style.display="none";leaderLine.setAttribute("points","");bracket.setAttribute("points","");}
+function updateCallout(){
+  if(!annOn||!currentComp){hideCallout();return;}
+  const c=centerOf(currentComp);if(!c){hideCallout();return;}
+  const s=toScreen(c);if(!s.front){hideCallout();return;}
+  const r=canvas.getBoundingClientRect();const side=s.x>r.width*0.5?"right":"left";
+  const ly=Math.max(40,Math.min(r.height-40,s.y));
+  plabel.style.display="block";plabel.style[side]="26px";plabel.style[side==="left"?"right":"left"]="auto";plabel.style.top=ly+"px";
+  const i=typeList().indexOf(currentComp);plabel.innerHTML=`<span class="ltr">${String.fromCharCode(97+((i<0?0:i)%26))}</span>${currentComp}`;
+  const pr=plabel.getBoundingClientRect();const ox=(side==="left"?pr.right:pr.left)-r.left,oy=(pr.top+pr.height/2)-r.top;
+  const stub=ox+(side==="left"?14:-14);
+  leaderLine.setAttribute("points",`${ox},${oy} ${stub},${oy} ${s.x},${s.y}`);
+  const dx=(ox-s.x),dy=(oy-s.y),dl=Math.hypot(dx,dy)||1,ux=dx/dl,uy=dy/dl,pxp=-uy,pyp=ux,L=6,C=4;
+  const ax=s.x+pxp*L,ay=s.y+pyp*L,bx=s.x-pxp*L,by=s.y-pyp*L;
+  // mirrored: bracket opens toward the element (caps point away from the label)
+  bracket.setAttribute("points",`${ax-ux*C},${ay-uy*C} ${ax},${ay} ${bx},${by} ${bx-ux*C},${by-uy*C}`);
+}
+
+/* ---- model loading ---- */
+const stageMsg=document.getElementById("stageMsg");
+function setMsg(t){stageMsg.style.display=t?"flex":"none";stageMsg.firstElementChild.textContent=t||"";}
+function openPersistedDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(PERSIST_DB,1);req.onupgradeneeded=()=>{req.result.createObjectStore(PERSIST_STORE,{keyPath:"name"});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+async function saveLocalFiles(files){
+  if(!("indexedDB" in window))return;
+  const db=await openPersistedDb();
+  const tx=db.transaction(PERSIST_STORE,"readwrite");
+  const store=tx.objectStore(PERSIST_STORE);
+  for(const [name,file] of Object.entries(files||{})){
+    const data=await (file.arrayBuffer?file.arrayBuffer():Promise.resolve(file.data));
+    if(data)store.put({name,type:file.type||"",data});
+  }
+  await new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});
+}
+async function loadPersistedLocalFiles(){
+  if(!("indexedDB" in window))return null;
+  try{
+    const db=await openPersistedDb();
+    const tx=db.transaction(PERSIST_STORE,"readonly");
+    const store=tx.objectStore(PERSIST_STORE);
+    const entries=await new Promise((resolve,reject)=>{const req=store.getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+    localFiles=Object.fromEntries(entries.map(entry=>[entry.name,{name:entry.name,type:entry.type||"",data:entry.data,arrayBuffer:()=>Promise.resolve(entry.data)}]));
+    if(localFiles&&Object.keys(localFiles).length){
+      localModelsByView={};
+      const names=Object.keys(localFiles);
+      Object.keys(VIEWS).forEach((viewKey,index)=>{const fileName=VIEWS[viewKey].file;const match=names.find(name=>name.toLowerCase()===fileName.toLowerCase()||name.toLowerCase().includes(viewKey.toLowerCase())||fileName.toLowerCase().includes(name.toLowerCase()));if(match)localModelsByView[viewKey]=localFiles[match];});
+      if(!Object.keys(localModelsByView).length){
+        const firstKey=Object.keys(localFiles)[0];
+        localModelsByView={structure:localFiles[firstKey]};
+      }
+    }
+    return localFiles;
+  }catch(err){
+    localFiles=null;
+    localModelsByView={};
+    return null;
+  }
+}
+async function loadModel(view){
+  if(cache[view])return cache[view];
+  if(!GLTFLoader)throw new Error("noloader");
+  const targetName=VIEWS[view].file;
+  const localFile=localModelsByView?.[view]||localFiles?.[targetName]||((localFiles&&Object.keys(localFiles).length===1)?Object.values(localFiles)[0]:null);
+  let gltf;
+  if(localFile){
+    const data=localFile.data instanceof ArrayBuffer ? localFile.data : await localFile.arrayBuffer();
+    gltf=await new Promise((res,rej)=>new GLTFLoader().parse(data,"",res,undefined,rej));
+  }else{
+    gltf=await new Promise((res,rej)=>new GLTFLoader().load(targetName,res,undefined,rej));
+  }
+  const g=gltf.scene;const cm={};
+  g.traverse(n=>{if(n.isMesh){n.material=baseMat;n.castShadow=false;n.frustumCulled=true;const t=meaningful(n);n.userData.cid=t;(cm[t]=cm[t]||[]).push(n);}});
+  cache[view]={scene:g,cm};return cache[view];
+}
+function frame(g){const b=new THREE.Box3().setFromObject(g);b.getCenter(modelCenter);modelSize=Math.max(b.getSize(new THREE.Vector3()).length(),1);
+  target.copy(modelCenter);radius=modelSize*0.95;theta=DEF.theta;phi=DEF.phi;camera.far=modelSize*40;camera.near=modelSize/2000;camera.updateProjectionMatrix();}
+async function loadView(view){
+  currentView=view;currentComp=null;mode="solid";
+  document.getElementById("viewTitle").textContent=VIEWS[view].title;document.getElementById("viewSub").textContent=VIEWS[view].sub;
+  document.getElementById("plateTitle").textContent=VIEWS[view].plate;document.getElementById("plateNo").textContent="fig. "+VIEWS[view].fig;
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode==="solid"));
+  xsw.setAttribute("aria-pressed",false);crossOn=false;baseMat.clippingPlanes=[];hiMat.clippingPlanes=[];baseMat.needsUpdate=hiMat.needsUpdate=true;
+  detailBody.innerHTML=`<div class="empty">Click any part of the model — or a name in the <b>Components</b> list — to read its illustrative figures.</div>`;
+  hideCallout();syncViewList();
+  if(currentModel){root.remove(currentModel);currentModel=null;}
+  CM={};renderCompList();renderCompare();
+  try{
+    setMsg("Loading "+VIEWS[view].title+" …");
+    const {scene:g,cm}=await loadModel(view);
+    currentModel=g;CM=cm;root.add(g);frame(g);
+    renderCompList();renderCompare();setMsg("");
+  }catch(err){
+    setMsg(GLTFLoader? ("Could not load "+VIEWS[view].file+" — is it beside this page?") : "3D models load when this page is run with the .glb files beside it (a local server or a deploy). The interface, controls and globe all work here.");
+  }
+}
+
+/* ---- controls ---- */
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+const xsw=document.getElementById("xsw");xsw.addEventListener("click",()=>setCross(xsw.getAttribute("aria-pressed")!=="true"));
+const annSw=document.getElementById("annSw");annSw.addEventListener("click",()=>{annOn=annSw.getAttribute("aria-pressed")!=="true";annSw.setAttribute("aria-pressed",annOn);if(!annOn)hideCallout();});
+const rotateBtn=document.getElementById("rotateBtn");rotateBtn.addEventListener("click",()=>{autoRotate=!autoRotate;rotateBtn.setAttribute("aria-pressed",autoRotate);lastInt=performance.now();});
+document.getElementById("isoBtn").addEventListener("click",()=>setMode(mode==="isolate"?"solid":"isolate"));
+document.getElementById("resetBtn").addEventListener("click",()=>{setMode("solid");setCross(false);if(currentModel)frame(currentModel);});
+document.getElementById("shotBtn").addEventListener("click",()=>{const a=document.createElement("a");a.download="architectural-anatomy.png";a.href=renderer.domElement.toDataURL("image/png");a.click();});
+const glbBtn=document.getElementById("glbBtn"),glbInput=document.getElementById("glbInput");
+async function consumePickedFiles(files){
+  const pickedFiles=files.filter(f=>/\.glb$/i.test(f.name)||/\.gltf$/i.test(f.name));
+  if(!pickedFiles.length){setMsg("No .glb or .gltf files were found in that selection.");return;}
+  localFiles=Object.fromEntries(pickedFiles.map(f=>[f.name,{name:f.name,type:f.type||"",arrayBuffer:()=>f.arrayBuffer()}]));
+  localModelsByView={};
+  const names=Object.keys(localFiles);
+  Object.keys(VIEWS).forEach((viewKey)=>{const fileName=VIEWS[viewKey].file;const match=names.find(name=>name.toLowerCase()===fileName.toLowerCase()||name.toLowerCase().includes(viewKey.toLowerCase())||fileName.toLowerCase().includes(name.toLowerCase()));if(match)localModelsByView[viewKey]=localFiles[match];});
+  if(!Object.keys(localModelsByView).length){const firstKey=Object.keys(localFiles)[0];localModelsByView={structure:localFiles[firstKey]};}
+  await saveLocalFiles(localFiles);
+  delete cache[currentView];
+  setMsg("Loading local model…");
+  try{await loadView(currentView);}catch(err){setMsg("Could not parse the selected local model file.");}
+}
+async function pickFolder(){
+  if(!GLTFLoader){setMsg("This browser needs the 3D model loader to be available before local files can be opened.");return;}
+  if(window.showDirectoryPicker){
+    try{
+      const dirHandle=await window.showDirectoryPicker();
+      const pickedFiles=[];
+      async function walk(handle){
+        for await(const entry of handle.values()){
+          if(entry.kind==="file" && (/\.glb$/i.test(entry.name)||/\.gltf$/i.test(entry.name))){pickedFiles.push(await entry.getFile());}
+          else if(entry.kind==="directory") await walk(entry);
+        }
+      }
+      await walk(dirHandle);
+      if(!pickedFiles.length){setMsg("No .glb or .gltf files were found in that folder.");return;}
+      await consumePickedFiles(pickedFiles);
+    }catch(err){
+      glbInput.click();
+    }
+    return;
+  }
+  glbInput.click();
+}
+glbBtn.addEventListener("click",()=>pickFolder());
+glbInput.addEventListener("change",async e=>{const files=[...e.target.files||[]];if(!files.length||!GLTFLoader)return;await consumePickedFiles(files);});
+
+/* ---- LIBRARY ---- */
+const library=document.getElementById("library");
+const TYPES=[["Detached home","house"],["Terraced row","terrace"],["Apartment block","apt"],["Office tower","office"],["Retail unit","retail"],["Warehouse","ware"],["School","school"],["Hospital","hospital"],["Museum / civic","civic"],["Church","church"],["Stadium","stadium"],["Bridge","bridge"]];
+const LANDMARKS=[["Parthenon","parthenon"],["Colosseum","colosseum"],["Eiffel Tower","eiffel"],["Taj Mahal","taj"],["Pyramids","pyramid"],["Clock tower","clock"],["Opera House","opera"],["Notre-Dame","notredame"],["Leaning Tower","pisa"],["Hagia Sophia","hagia"],["Empire State","empire"],["Stonehenge","stonehenge"]];
+const GLYPH={
+  house:`<path d="M8 30 30 12 52 30" fill="none" stroke="#8A986A" stroke-width="1.6"/><rect x="14" y="30" width="32" height="18" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><rect x="20" y="36" width="8" height="12" fill="#8A6F94"/><rect x="34" y="35" width="9" height="8" fill="#5F8B86"/>`,
+  terrace:`<path d="M6 26 14 18 22 26 30 18 38 26 46 18 54 26" fill="none" stroke="#8A986A" stroke-width="1.5"/><rect x="8" y="26" width="44" height="22" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.3"/><path d="M20 26v22M34 26v22" stroke="#B0674F" stroke-width="1"/>`,
+  apt:`<rect x="16" y="10" width="28" height="40" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><path d="M22 16h4M34 16h4M22 24h4M34 24h4M22 32h4M34 32h4M22 40h4M34 40h4" stroke="#5F8B86" stroke-width="2"/>`,
+  office:`<rect x="14" y="8" width="32" height="44" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.4"/><path d="M20 14h20M20 22h20M20 30h20M20 38h20" stroke="#7C8A93" stroke-width="1"/>`,
+  retail:`<rect x="10" y="24" width="40" height="24" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><path d="M10 24 14 14h32l4 10" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.3"/><rect x="26" y="34" width="12" height="14" fill="#8A6F94"/>`,
+  ware:`<path d="M8 24 8 48 52 48 52 24" fill="#F1E9D6" stroke="#7C8A93" stroke-width="1.4"/><path d="M8 24 20 14 32 24 44 14 52 24" fill="none" stroke="#8A986A" stroke-width="1.5"/>`,
+  school:`<rect x="12" y="26" width="36" height="22" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><path d="M12 26 30 16 48 26" fill="none" stroke="#8A986A" stroke-width="1.5"/><path d="M30 16V8h8" fill="none" stroke="#A85A46" stroke-width="1.4"/>`,
+  hospital:`<rect x="14" y="14" width="32" height="34" fill="#F1E9D6" stroke="#7C8A93" stroke-width="1.4"/><path d="M30 20v12M24 26h12" stroke="#A85A46" stroke-width="2.4"/>`,
+  civic:`<path d="M10 22 30 12 50 22Z" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.4"/><path d="M14 24v20M22 24v20M30 24v20M38 24v20M46 24v20" stroke="#7C8A93" stroke-width="1.6"/><path d="M8 46h44" stroke="#7C8A93" stroke-width="1.6"/>`,
+  church:`<rect x="18" y="24" width="24" height="24" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><path d="M18 24 30 12 42 24" fill="none" stroke="#8A986A" stroke-width="1.5"/><path d="M30 4v10M26 8h8" stroke="#A85A46" stroke-width="1.5"/>`,
+  stadium:`<ellipse cx="30" cy="30" rx="22" ry="14" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.5"/><ellipse cx="30" cy="30" rx="11" ry="6" fill="#F1E9D6" stroke="#5F8B86" stroke-width="1.3"/>`,
+  bridge:`<path d="M6 34h48" stroke="#7C8A93" stroke-width="1.6"/><path d="M10 34a20 12 0 0140 0" fill="none" stroke="#8A986A" stroke-width="1.5"/><path d="M16 34v10M30 30v14M44 34v10" stroke="#B0674F" stroke-width="1.3"/>`,
+  parthenon:`<path d="M8 20 30 10 52 20Z" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.3"/><path d="M12 22v20M20 22v20M30 22v20M40 22v20M48 22v20M8 44h44" stroke="#7C8A93" stroke-width="1.5"/>`,
+  colosseum:`<ellipse cx="30" cy="30" rx="22" ry="16" fill="none" stroke="#B0674F" stroke-width="1.5"/><path d="M12 22v16M22 18v24M38 18v24M48 22v16" stroke="#8A986A" stroke-width="1.2"/>`,
+  eiffel:`<path d="M30 8 20 50M30 8 40 50M22 36h16M18 50h24" fill="none" stroke="#7C8A93" stroke-width="1.5"/>`,
+  taj:`<circle cx="30" cy="24" r="10" fill="#F1E9D6" stroke="#8A986A" stroke-width="1.4"/><path d="M30 12v-5" stroke="#A85A46" stroke-width="1.4"/><rect x="18" y="30" width="24" height="16" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.3"/><path d="M12 20v26M48 20v26" stroke="#7C8A93" stroke-width="1.4"/>`,
+  pyramid:`<path d="M8 46 26 16 44 46Z" fill="#EAEDDD" stroke="#C29B57" stroke-width="1.4"/><path d="M34 46 46 26 56 46Z" fill="#F1E9D6" stroke="#C29B57" stroke-width="1.2"/>`,
+  clock:`<rect x="24" y="12" width="14" height="36" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.4"/><circle cx="31" cy="22" r="5" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.2"/><path d="M24 12 31 6 38 12" fill="none" stroke="#8A986A" stroke-width="1.4"/>`,
+  opera:`<path d="M8 44a18 20 0 0118-14 16 18 0 0114 14M20 44a12 16 0 0112-11 12 14 0 0110 11" fill="#EAEDDD" stroke="#5F8B86" stroke-width="1.4"/><path d="M6 44h50" stroke="#7C8A93" stroke-width="1.4"/>`,
+  notredame:`<rect x="15" y="18" width="10" height="30" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.3"/><rect x="35" y="18" width="10" height="30" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.3"/><rect x="25" y="24" width="10" height="24" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.2"/><circle cx="30" cy="22" r="4.2" fill="#5F8B86" stroke="#8A986A" stroke-width="1"/>`,
+  pisa:`<g transform="rotate(9 30 30)"><rect x="24" y="10" width="12" height="38" fill="#F1E9D6" stroke="#C29B57" stroke-width="1.3"/><path d="M24 18h12M24 26h12M24 34h12M24 42h12" stroke="#C29B57" stroke-width="0.8"/></g>`,
+  hagia:`<circle cx="30" cy="26" r="11" fill="#EAEDDD" stroke="#8A986A" stroke-width="1.3"/><rect x="18" y="30" width="24" height="18" fill="#F1E9D6" stroke="#B0674F" stroke-width="1.2"/><path d="M12 18v30M48 18v30" stroke="#7C8A93" stroke-width="1.4"/>`,
+  empire:`<path d="M26 6h8v10h4v10h4v22H14V26h4V16h8z" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.3"/><path d="M22 30h16M22 38h16" stroke="#7C8A93" stroke-width="0.8"/>`,
+  stonehenge:`<rect x="12" y="26" width="6" height="22" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.2"/><rect x="24" y="26" width="6" height="22" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.2"/><rect x="10" y="20" width="22" height="6" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.2"/><rect x="38" y="30" width="6" height="18" fill="#EAEDDD" stroke="#7C8A93" stroke-width="1.2"/>`
+};
+function glyphTile(label,key){return `<div class="tile" role="button" tabindex="0"><svg viewBox="0 0 60 56"><ellipse cx="30" cy="28" rx="28" ry="26" fill="#FBF7EC" stroke="#D8CBA8" stroke-width="0.8"/><g class="gy">${GLYPH[key]||GLYPH.house}</g></svg><div class="t">${label}</div></div>`;}
+document.getElementById("typeGrid").innerHTML=TYPES.map(([l,k])=>glyphTile(l,k)).join("");
+document.getElementById("landmarkBand").innerHTML=LANDMARKS.map(([l,k])=>glyphTile(l,k)).join("");
+library.querySelectorAll(".tile").forEach(t=>{t.addEventListener("click",showMain);t.addEventListener("keydown",e=>{if(e.key==="Enter")showMain();});});
+
+/* globe — user-rotatable */
+const gcanvas=document.getElementById("globe");let grenderer,gscene,gcam,globe,graf=null,gdrag=false,gpx=0,gpy=0,gmoved=0,gLast=0;
+function makeWorldTexture(){const W=1024,H=512,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  x.fillStyle="#EDE7D6";x.fillRect(0,0,W,H);
+  x.strokeStyle="rgba(106,88,60,0.22)";x.lineWidth=1;
+  for(let lon=-180;lon<=180;lon+=30){const px=(lon+180)/360*W;x.beginPath();x.moveTo(px,0);x.lineTo(px,H);x.stroke();}
+  for(let lat=-90;lat<=90;lat+=30){const py=(90-lat)/180*H;x.beginPath();x.moveTo(0,py);x.lineTo(W,py);x.stroke();}
+  const P=(lo,la)=>[(lo+180)/360*W,(90-la)/180*H];
+  const draw=pts=>{x.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]);});x.closePath();x.fillStyle="#8A986A";x.fill();x.strokeStyle="#5c4a32";x.lineWidth=1.4;x.stroke();};
+  [[[-158,60],[-140,68],[-95,70],[-80,50],[-80,30],[-98,18],[-115,25],[-125,40],[-140,55]],
+   [[-80,8],[-60,6],[-38,-5],[-40,-23],[-55,-35],[-72,-52],[-78,-20],[-82,0]],
+   [[-16,14],[10,34],[32,32],[50,12],[42,-4],[18,-35],[10,-18],[-6,6]],
+   [[-8,44],[2,52],[28,60],[40,48],[22,40],[2,42]],
+   [[34,60],[70,72],[130,70],[142,50],[122,30],[100,8],[78,8],[55,25],[42,42]],
+   [[114,-20],[135,-12],[150,-26],[142,-38],[120,-34],[113,-24]]].forEach(draw);
+  return new THREE.CanvasTexture(cv);}
+function initGlobe(){if(grenderer)return;
+  grenderer=new THREE.WebGLRenderer({canvas:gcanvas,antialias:true,alpha:true});grenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  gscene=new THREE.Scene();gcam=new THREE.PerspectiveCamera(38,1,0.1,100);gcam.position.set(0,0,6);
+  gscene.add(new THREE.HemisphereLight(0xFDF7EA,0xC8bc9c,1.1));const gk=new THREE.DirectionalLight(0xffffff,0.45);gk.position.set(3,4,5);gscene.add(gk);
+  globe=new THREE.Group();const tex=makeWorldTexture();
+  globe.add(new THREE.Mesh(new THREE.SphereGeometry(2,64,48),new THREE.MeshStandardMaterial({map:tex,roughness:1,metalness:0})));
+  globe.add(new THREE.Mesh(new THREE.SphereGeometry(2.04,48,32),new THREE.MeshBasicMaterial({color:0x2b2314,transparent:true,opacity:0.07,side:THREE.BackSide})));
+  globe.rotation.x=0.32;gscene.add(globe);}
+function sizeGlobe(){const r=gcanvas.getBoundingClientRect();if(!r.width)return;grenderer.setSize(r.width,r.height,false);gcam.aspect=1;gcam.updateProjectionMatrix();}
+function globeTick(){if(library.style.display==="none"){graf=null;return;}if(!gdrag&&(performance.now()-gLast>1800))globe.rotation.y+=0.0032;grenderer.render(gscene,gcam);graf=requestAnimationFrame(globeTick);}
+gcanvas.addEventListener("pointerdown",e=>{gdrag=true;gmoved=0;gpx=e.clientX;gpy=e.clientY;gcanvas.setPointerCapture(e.pointerId);gLast=performance.now();});
+gcanvas.addEventListener("pointermove",e=>{if(!gdrag)return;const dx=e.clientX-gpx,dy=e.clientY-gpy;gpx=e.clientX;gpy=e.clientY;gmoved+=Math.abs(dx)+Math.abs(dy);globe.rotation.y+=dx*0.006;globe.rotation.x=Math.max(-1.2,Math.min(1.2,globe.rotation.x+dy*0.006));gLast=performance.now();});
+gcanvas.addEventListener("pointerup",e=>{gdrag=false;if(gmoved<5)showMain();});
+
+function showLibrary(){library.style.display="flex";initGlobe();requestAnimationFrame(()=>{sizeGlobe();if(!graf)graf=requestAnimationFrame(globeTick);});}
+function showMain(){library.style.display="none";}
+document.getElementById("libBack").addEventListener("click",showMain);
+document.querySelectorAll("[data-nav]").forEach(a=>a.addEventListener("click",()=>{a.dataset.nav==="library"?showLibrary():showMain();}));
+
+/* ---- loop ---- */
+function resize(){const r=canvas.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();if(grenderer&&library.style.display!=="none")sizeGlobe();}
+addEventListener("resize",resize);
+function tick(t){if(autoRotate&&(t-lastInt>2600)&&!dragging)theta+=0.0020;applyCam();updateCallout();renderer.render(scene,camera);requestAnimationFrame(tick);} 
+async function start(){
+  await loadPersistedLocalFiles();
+  resize();applyCam();await loadView("structure");requestAnimationFrame(tick);
+}
+start();
+</script>
+</body>
+</html>
