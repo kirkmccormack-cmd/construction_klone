@@ -343,7 +343,7 @@ function slideIn(dir,snap){slideImg.src=snap;slideImg.style.display="block";slid
 /* watercolour material: per-component colour + surface-anchored pigment blotches,
    paper lift, granular grain and edge pooling. Cached per colour. */
 const matCache={};
-const U_BLOTCH={value:1.0}, U_RIM={value:0.8}, U_RIMPOW={value:1.9}, U_RIMCOL={value:new THREE.Color(0x2b2314)}, U_PAPER={value:new THREE.Color(0xF4EEDC)};
+const U_BLOTCH={value:1.0}, U_RIM={value:1.15}, U_RIMPOW={value:1.4}, U_RIMCOL={value:new THREE.Color(0x1a150c)}, U_PAPER={value:new THREE.Color(0xF4EEDC)};
 const NOISE_GLSL=`
 float _h3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
 float _vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
@@ -456,7 +456,7 @@ const MATERIALS={
   structure:[_m("Concrete block","Concrete%20block.JPG"),_m("Softwood timber","Wood%20planks%20texture.jpg"),_m("Concrete","Cement%20texture.jpg")],
   stairs:[_m("Softwood timber","Wood%20planks%20texture.jpg"),_m("Hardwood timber","Wood%20Texture.jpg"),_m("Stainless steel screws","Chequerplate%20cut%20slots%20in%20stainless%20steel.jpg")],
   mockup:[_m("Concrete","Cement%20texture.jpg"),_m("Glass","Free%20green%20orange%20dirty%20window%20glass%20texture%20for%20layers%20(3055827277).jpg"),_m("Softwood timber","Wood%20planks%20texture.jpg")],
-  services:[_m("Steel","Light%20grey%20clean%20smooth%20metal%20sheet%20square%20seamless%20building%20wall%20cladding%20texture.jpg"),_m("Copper","Rainbow%20Copper%20Texture%20Wallpaper%20(7001560157).jpg"),_m("Plastic","Grey%20slightly%20scuffed%20synthetic%20molded%20plastic%20seamless%20surface%20texture.jpg")]
+  services:[_m("Steel","Steel%20pipe.jpg"),_m("Copper","Copper%20wires.JPG"),_m("Plastic","PVC%20Pipe.jpg")]
 };
 const matSpecEl=document.getElementById("matSpec");
 function renderMaterials(view){const list=MATERIALS[view]||[];
